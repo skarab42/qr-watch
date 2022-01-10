@@ -2,9 +2,9 @@
   "name": "@qr-watch/server",
   "version": "1.0.0",
   "license": "MIT",
-  "main": "./dist/server.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "dev": "esr ./src/server.ts",
+    "dev": "esr ./src/index.ts",
     "build": "tsc"
   },
   "dependencies": {
