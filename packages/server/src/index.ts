@@ -1,7 +1,15 @@
 import path from "path";
-import server, { Connection } from "./server";
+import server, { WatcherHandler, WebsocketHandler } from "./server";
 
 const outputDir = path.resolve(process.cwd(), "output");
+
+const watcherHandler: WatcherHandler = (err, events) => {
+  console.log("Watch:", err, events);
+};
+
+const websocketHandler: WebsocketHandler = (connection) => {
+  console.log("New connection:", connection);
+};
 
 const app = server({
   port: 8080,
@@ -10,10 +18,7 @@ const app = server({
   // @ts-expect-error noPropertyAccessFromIndexSignature
   dev: process.env.NODE_ENV === "dev",
   websocketHandler,
+  watcherHandler,
 });
-
-function websocketHandler(connection: Connection) {
-  console.log("New connection:", connection);
-}
 
 app.listen();

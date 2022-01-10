@@ -3,15 +3,18 @@ import fsStatic from "fastify-static";
 import { ensureDirSync } from "fs-extra";
 import type { Message } from "@qr-watch/types";
 import fastify, { FastifyInstance } from "fastify";
-import fsWebsocket, { SocketStream, WebsocketHandler } from "fastify-websocket";
+import watcher, { SubscribeCallback } from "@parcel/watcher";
+import fsWebsocket, { WebsocketHandler } from "fastify-websocket";
 
-export type Connection = SocketStream;
+export type WatcherHandler = SubscribeCallback;
+export type { WebsocketHandler } from "fastify-websocket";
 
 interface Settings {
   dev?: boolean;
   port: number;
   publicPath: string;
   clientPath: string;
+  watcherHandler: WatcherHandler;
   websocketHandler: WebsocketHandler;
 }
 
@@ -41,6 +44,7 @@ function create(settings: Settings): FastifyInstance {
 }
 
 async function listen(server: FastifyInstance, settings: Settings) {
+  await watcher.subscribe(settings.publicPath, settings.watcherHandler);
   await server.listen(settings.port);
 
   const url = `http://localhost:${settings.port}`;
