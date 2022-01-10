@@ -1,6 +1,7 @@
 import open from "open";
 import fsStatic from "fastify-static";
 import { ensureDirSync } from "fs-extra";
+import type { Message } from "@qr-watch/types";
 import fastify, { FastifyInstance } from "fastify";
 import fsWebsocket, { SocketStream, WebsocketHandler } from "fastify-websocket";
 
@@ -21,6 +22,7 @@ export default function server(settings: Settings) {
     server,
     settings,
     listen: () => listen(server, settings),
+    broadcast: (message: Message) => broadcast(server, message),
   };
 }
 
@@ -48,4 +50,12 @@ async function listen(server: FastifyInstance, settings: Settings) {
   if (!settings.dev) {
     open(url);
   }
+}
+
+function broadcast(server: FastifyInstance, message: Message) {
+  server.websocketServer.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(message));
+    }
+  });
 }
