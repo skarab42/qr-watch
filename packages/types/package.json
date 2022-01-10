@@ -1,0 +1,10 @@
+{
+  "name": "@qr-watch/types",
+  "version": "1.0.0",
+  "license": "MIT",
+  "types": "./shared.d.ts",
+  "scripts": {
+    "dev": "echo SKIP",
+    "build": "echo SKIP"
+  }
+}

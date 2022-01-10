@@ -1,0 +1,3 @@
+# QR Watch - Client
+
+WIP...
