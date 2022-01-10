@@ -13,9 +13,8 @@
     "build": "yarn workspaces run build",
     "postbuild": "pkg ."
   },
-  "bin": "./packages/server/dist/server.js",
+  "bin": "./packages/server/dist/index.js",
   "pkg": {
-    "scripts": "./packages/server/dist/**/*.js",
     "assets": "./packages/client/dist/**/*",
     "outputPath": "./build"
   },
