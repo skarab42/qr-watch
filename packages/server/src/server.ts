@@ -1,65 +1,91 @@
+import path from "path";
 import open from "open";
-import fsStatic from "fastify-static";
+import watcher from "@parcel/watcher";
 import { ensureDirSync } from "fs-extra";
-import type { Message } from "@qr-watch/types";
+import staticPlugin from "fastify-static";
 import fastify, { FastifyInstance } from "fastify";
-import watcher, { SubscribeCallback } from "@parcel/watcher";
-import fsWebsocket, { WebsocketHandler } from "fastify-websocket";
+import wsPlugin, { SocketStream } from "fastify-websocket";
 
-export type WatcherHandler = SubscribeCallback;
-export type { WebsocketHandler } from "fastify-websocket";
+import type { Message } from "@qr-watch/types";
 
-interface Settings {
+export interface Settings {
   dev?: boolean;
-  port: number;
+  port?: number;
+  wsPath?: string;
   publicPath: string;
   clientPath: string;
-  watcherHandler: WatcherHandler;
-  websocketHandler: WebsocketHandler;
+  outputPath: string;
 }
 
-export default function server(settings: Settings) {
-  const server = create(settings);
+export default class Server {
+  readonly dev: boolean = false;
+  readonly port: number = 3000;
+  readonly wsPath: string = "/ws";
+  readonly publicPath: string;
+  readonly clientPath: string;
+  readonly outputPath: string;
 
-  return {
-    server,
-    settings,
-    listen: () => listen(server, settings),
-    broadcast: (message: Message) => broadcast(server, message),
-  };
-}
+  readonly url: string;
+  readonly fastify: FastifyInstance;
 
-function create(settings: Settings): FastifyInstance {
-  const server = fastify({ logger: settings.dev });
+  constructor(settings: Settings) {
+    this.dev = settings.dev ?? this.dev;
+    this.port = settings.port ?? this.port;
+    this.wsPath = settings.wsPath ?? this.wsPath;
+    this.publicPath = settings.publicPath;
+    this.clientPath = settings.clientPath;
+    this.outputPath = settings.outputPath;
 
-  ensureDirSync(settings.publicPath);
+    ensureDirSync(this.publicPath);
 
-  server.register(fsWebsocket);
-  server.register(fsStatic, {
-    root: [settings.publicPath, settings.clientPath],
-  });
-  server.get("/ws", { websocket: true }, settings.websocketHandler);
+    this.url = `http://localhost:${this.port}`;
+    this.fastify = fastify({ logger: this.dev });
 
-  return server;
-}
+    this.fastify.register(wsPlugin);
+    this.fastify.register(staticPlugin, {
+      root: [this.publicPath, this.clientPath],
+    });
 
-async function listen(server: FastifyInstance, settings: Settings) {
-  await watcher.subscribe(settings.publicPath, settings.watcherHandler);
-  await server.listen(settings.port);
-
-  const url = `http://localhost:${settings.port}`;
-
-  console.log(`Server listening at ${url}`);
-
-  if (!settings.dev) {
-    open(url);
+    this.fastify.get(this.wsPath, { websocket: true }, (connection) =>
+      this.websocketHandler(connection)
+    );
   }
-}
 
-function broadcast(server: FastifyInstance, message: Message) {
-  server.websocketServer.clients.forEach((client) => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify(message));
+  broadcast(message: Message) {
+    this.fastify.websocketServer.clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
+
+  async listen() {
+    await this.fastify.listen(this.port);
+    await watcher.subscribe(this.publicPath, (error, events) =>
+      this.watcherHandler(error, events)
+    );
+
+    console.log(`Server listening at ${this.url}`);
+
+    if (!this.dev) {
+      open(this.url);
     }
-  });
+  }
+
+  websocketHandler(connection: SocketStream) {
+    console.log("websocketHandler", this.url, connection);
+  }
+
+  watcherHandler(error: Error | null, events: watcher.Event[]) {
+    if (error) {
+      this.fastify.log.error(`WatcherHandler: ${error}`);
+      return;
+    }
+
+    events.forEach((event) => {
+      if (path.resolve(event.path) === this.outputPath) {
+        console.log("QR event:", event.type);
+      }
+    });
+  }
 }
