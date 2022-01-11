@@ -7,6 +7,7 @@ import fastify, { FastifyInstance } from "fastify";
 import wsPlugin, { SocketStream } from "fastify-websocket";
 
 import type { Message } from "@qr-watch/types";
+import EventEmitter from "events";
 
 export interface Settings {
   dev?: boolean;
@@ -17,6 +18,13 @@ export interface Settings {
   outputPath: string;
 }
 
+type EventName =
+  | "ws:client:connection"
+  | "ws:client:message"
+  | "qr:watch:create"
+  | "qr:watch:update"
+  | "qr:watch:delete";
+
 export default class Server {
   readonly dev: boolean = false;
   readonly port: number = 3000;
@@ -26,6 +34,7 @@ export default class Server {
   readonly outputPath: string;
 
   readonly url: string;
+  readonly ee: EventEmitter;
   readonly fastify: FastifyInstance;
 
   constructor(settings: Settings) {
@@ -38,6 +47,7 @@ export default class Server {
 
     ensureDirSync(this.publicPath);
 
+    this.ee = new EventEmitter();
     this.url = `http://localhost:${this.port}`;
     this.fastify = fastify({ logger: this.dev });
 
@@ -49,6 +59,11 @@ export default class Server {
     this.fastify.get(this.wsPath, { websocket: true }, (connection) =>
       this.websocketHandler(connection)
     );
+  }
+
+  // TODO How to type listeners ?
+  on(event: EventName, listener: (...args: any[]) => void) {
+    this.ee.on(event, listener);
   }
 
   broadcast(message: Message) {
@@ -73,7 +88,16 @@ export default class Server {
   }
 
   websocketHandler(connection: SocketStream) {
-    console.log("websocketHandler", this.url, connection);
+    this.ee.emit("ws:client:connection", connection);
+
+    connection.socket.on("message", async (data) => {
+      try {
+        const message: Message = JSON.parse(data.toString());
+        this.ee.emit("ws:client:message", message);
+      } catch (error) {
+        this.fastify.log.error(`WebsocketHandler: ${error}`);
+      }
+    });
   }
 
   watcherHandler(error: Error | null, events: watcher.Event[]) {
@@ -84,7 +108,7 @@ export default class Server {
 
     events.forEach((event) => {
       if (path.resolve(event.path) === this.outputPath) {
-        console.log("QR event:", event.type);
+        this.ee.emit(`qr:watch:${event.type}`);
       }
     });
   }
