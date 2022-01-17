@@ -1,9 +1,7 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import Removebutton from "./Removebutton.svelte";
   import IoMdOpen from "svelte-icons/io/IoMdOpen.svelte";
-  import IoIosWarning from "svelte-icons/io/IoIosWarning.svelte";
-  import IoMdCheckmark from "svelte-icons/io/IoMdCheckmark.svelte";
-  import { createEventDispatcher } from "svelte";
 
   export let code: string;
   export let file: string;
@@ -22,6 +20,12 @@
   $: console.log({ file });
 </script>
 
+{#if isValid}
+  <div class="message success">Good, it's still valid</div>
+{:else}
+  <div class="message warning">You've gone too far</div>
+{/if}
+
 <div class="preview">
   <div class="code">
     <div class="open" on:click={onOpenFolder}>
@@ -30,17 +34,6 @@
     <div class="truncate">{code}</div>
   </div>
   <div>
-    {#if isValid}
-      <div class="message success">
-        <div class="icon"><IoMdCheckmark /></div>
-        <div class="text">Good, it's still valid</div>
-      </div>
-    {:else}
-      <div class="message warning">
-        <div class="icon"><IoIosWarning /></div>
-        <div class="text">You've gone too far</div>
-      </div>
-    {/if}
     <img class="file" src={file} alt="Code: {code}" />
   </div>
   <div>
@@ -65,8 +58,8 @@
   }
 
   .truncate {
-    white-space: nowrap;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
   }
 
@@ -75,18 +68,9 @@
   }
 
   .message {
-    display: flex;
-    align-items: center;
-  }
-
-  .message .text {
-    flex: 1 1 auto;
-    text-align: left;
-  }
-
-  .icon {
-    height: 30px;
-    padding: 0 8px;
+    width: 400px;
+    text-align: center;
+    margin-bottom: 8px;
   }
 
   .code {
@@ -103,10 +87,10 @@
   }
 
   .success {
-    background-color: rgb(12, 224, 12);
+    color: rgb(12, 224, 12);
   }
 
   .warning {
-    background-color: rgb(236, 119, 10);
+    color: rgb(236, 119, 10);
   }
 </style>

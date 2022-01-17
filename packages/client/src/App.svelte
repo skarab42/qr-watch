@@ -1,5 +1,6 @@
 <script lang="ts">
   import WS from "./lib/ws";
+  import Options from "./components/Options.svelte";
   import CreateForm from "./components/CreateForm.svelte";
   import CodePreview from "./components/CodePreview.svelte";
 
@@ -8,6 +9,19 @@
   let code = "";
   let file = "";
   let isValid = false;
+
+  const sounds = {
+    ok: new Audio("sounds/ok.wav"),
+    ko: new Audio("sounds/ko.wav"),
+  };
+
+  const store = localStorage.getItem("playOn");
+  const playOn = store
+    ? JSON.parse(store)
+    : {
+        ok: true,
+        ko: true,
+      };
 
   const ws = new WS(`ws://${location.host}/ws`);
 
@@ -24,8 +38,6 @@
   });
 
   ws.on("message", (message: Message) => {
-    console.log(message);
-
     switch (message.type) {
       case "get-code":
       case "new-code":
@@ -39,6 +51,7 @@
         isValid = message.isValid;
         let [filename] = file.split("?");
         file = `${filename}?${Date.now()}`;
+        playSound(isValid);
         break;
     }
   });
@@ -54,6 +67,14 @@
   function onRemoveButtonConfirm() {
     ws.emit({ type: "remove-code" });
   }
+
+  function playSound(isValid: boolean) {
+    if (isValid && playOn.ok) {
+      sounds.ok.play();
+    } else if (!isValid && playOn.ko) {
+      sounds.ko.play();
+    }
+  }
 </script>
 
 <main>
@@ -65,16 +86,24 @@
       on:open-folder={onOpenFolder}
       on:remove-confirm={onRemoveButtonConfirm}
     />
+    <Options {playOn} />
   {:else}
     <CreateForm value={code} on:update={onCreateFormUpdate} />
   {/if}
 </main>
 
 <style>
+  @font-face {
+    font-family: "Roboto";
+    src: url("fonts/Roboto-Regular.ttf") format("truetype");
+  }
+
   :root {
     color: #eee;
     font-size: 32px;
     background-color: #111;
+    font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   }
 
   :global(html, body, #app, main) {

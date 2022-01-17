@@ -25,8 +25,9 @@
     padding: 8px;
     cursor: pointer;
     font-size: inherit;
-    border-radius: 4px;
     text-transform: uppercase;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
     background-color: rgb(211, 27, 27);
   }
 </style>
