@@ -1,54 +1,44 @@
 <script lang="ts">
-  import Input from "./lib/Input.svelte";
+  import WS from "./lib/ws";
   import type { Message } from "@qr-watch/types";
 
-  const socket = new WebSocket(`ws://${location.host}/ws`);
+  let code = null;
 
-  function sendJSON(message: Message) {
-    socket.send(JSON.stringify(message));
-  }
+  const ws = new WS(`ws://${location.host}/ws`);
 
-  socket.addEventListener("open", () => {
-    sendJSON({ type: "init" });
+  ws.on("open", () => {
+    ws.emit({ type: "get-code" });
   });
 
-  socket.addEventListener("message", (event) => {
-    const message: Message = JSON.parse(event.data);
+  ws.on("close", () => {
+    console.log("close");
+  });
 
+  ws.on("error", () => {
+    console.log("error");
+  });
+
+  ws.on("message", (message: Message) => {
     console.log(message);
-    mainClass = "";
 
-    if (message.type === "show-form") {
-      showForm = true;
-      showImage = false;
-    } else if (message.type === "load-image") {
-      showForm = false;
-      showImage = true;
-    } else if (message.type === "qr-status") {
-      qrValid = message.data === "ok";
-      mainClass = qrValid ? "green" : "red";
-      console.log(qrValid);
+    switch (message.type) {
+      case "get-code":
+        if (message.data) {
+          const { data } = JSON.parse(message.data);
+          code = data;
+        }
+        break;
+      case "new-code":
+        break;
     }
   });
-
-  function create({ detail }) {
-    sendJSON({ type: "create-qrcode", data: detail });
-  }
-
-  let showForm = false;
-  let showImage = false;
-  let qrValid = false;
-  let value = "";
-  let mainClass = "";
 </script>
 
-<main class={mainClass}>
-  {#if showForm}
-    <Input {value} on:create={create} />
-  {/if}
-
-  {#if showImage}
-    <div class="image">image...</div>
+<main>
+  {#if code}
+    {code}
+  {:else}
+    <div class="box">Form...</div>
   {/if}
 </main>
 
@@ -64,15 +54,7 @@
     margin: 0;
   }
 
-  .image {
-    height: 100%;
-  }
-
-  .red {
-    background-color: red;
-  }
-
-  .green {
-    background-color: green;
+  .box {
+    padding: 8px;
   }
 </style>
