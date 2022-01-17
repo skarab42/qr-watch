@@ -1,8 +1,10 @@
 <script lang="ts">
   import WS from "./lib/ws";
+  import CreateForm from "./components/CreateForm.svelte";
   import type { Message } from "@qr-watch/types";
 
   let code = null;
+  let value = "";
 
   const ws = new WS(`ws://${location.host}/ws`);
 
@@ -32,13 +34,19 @@
         break;
     }
   });
+
+  function onCreateFormUpdate({ detail }) {
+    console.log({ newValue: detail });
+  }
 </script>
 
 <main>
   {#if code}
     {code}
   {:else}
-    <div class="box">Form...</div>
+    <div class="box">
+      <CreateForm {value} on:update={onCreateFormUpdate} />
+    </div>
   {/if}
 </main>
 
