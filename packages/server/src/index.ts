@@ -21,6 +21,10 @@ server.on("ws:client:message", async (message: Message) => {
         server.broadcast({ type: "new-code", file, code });
       }
       break;
+    case "remove-code":
+      qr.removeCode(config.outputPath);
+      server.broadcast({ type: "remove-code" });
+      break;
   }
 });
 

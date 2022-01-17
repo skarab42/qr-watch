@@ -24,7 +24,7 @@
     placeholder="http://... or text"
   />
 
-  <button on:click={onClick} disabled={!value.length}>create code</button>
+  <button on:click={onClick} disabled={!value}>create code</button>
 </div>
 
 <style>

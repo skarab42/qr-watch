@@ -1,4 +1,9 @@
-import { pathExistsSync, readJsonSync, writeJsonSync } from "fs-extra";
+import {
+  pathExistsSync,
+  readJsonSync,
+  removeSync,
+  writeJsonSync,
+} from "fs-extra";
 import qrcode, { QRCodeToFileOptions } from "qrcode";
 import { basename } from "path";
 
@@ -36,7 +41,13 @@ export async function newCode(path: string, code: string) {
   return res;
 }
 
+export function removeCode(path: string) {
+  removeSync(`${path}.json`);
+  removeSync(path);
+}
+
 export default {
   getCode,
   newCode,
+  removeCode,
 };

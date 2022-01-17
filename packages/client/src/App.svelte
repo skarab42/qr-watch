@@ -1,10 +1,12 @@
 <script lang="ts">
   import WS from "./lib/ws";
   import CreateForm from "./components/CreateForm.svelte";
+  import CodePreview from "./components/CodePreview.svelte";
+
   import type { Message } from "@qr-watch/types";
 
-  let code = null;
-  let value = "";
+  let code = "";
+  let file = "";
 
   const ws = new WS(`ws://${location.host}/ws`);
 
@@ -25,9 +27,12 @@
 
     switch (message.type) {
       case "get-code":
-        code = message.code;
-        break;
       case "new-code":
+        code = message.code;
+        file = message.file;
+        break;
+      case "remove-code":
+        code = "";
         break;
     }
   });
@@ -35,15 +40,19 @@
   function onCreateFormUpdate({ detail }) {
     ws.emit({ type: "new-code", code: detail });
   }
+
+  function onRemoveButtonConfirm() {
+    console.log("Prout");
+
+    ws.emit({ type: "remove-code" });
+  }
 </script>
 
 <main>
   {#if code}
-    {code}
+    <CodePreview {file} {code} on:confirm={onRemoveButtonConfirm} />
   {:else}
-    <div class="box">
-      <CreateForm {value} on:update={onCreateFormUpdate} />
-    </div>
+    <CreateForm value={code} on:update={onCreateFormUpdate} />
   {/if}
 </main>
 
@@ -59,7 +68,7 @@
     margin: 0;
   }
 
-  .box {
+  main {
     padding: 8px;
   }
 </style>
