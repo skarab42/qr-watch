@@ -7,6 +7,7 @@
 
   let code = "";
   let file = "";
+  let isValid = false;
 
   const ws = new WS(`ws://${location.host}/ws`);
 
@@ -34,6 +35,11 @@
       case "remove-code":
         code = "";
         break;
+      case "check-code":
+        isValid = message.isValid;
+        let [filename] = file.split("?");
+        file = `${filename}?${Date.now()}`;
+        break;
     }
   });
 
@@ -41,16 +47,24 @@
     ws.emit({ type: "new-code", code: detail });
   }
 
-  function onRemoveButtonConfirm() {
-    console.log("Prout");
+  function onOpenFolder() {
+    ws.emit({ type: "open-public-dir" });
+  }
 
+  function onRemoveButtonConfirm() {
     ws.emit({ type: "remove-code" });
   }
 </script>
 
 <main>
   {#if code}
-    <CodePreview {file} {code} on:confirm={onRemoveButtonConfirm} />
+    <CodePreview
+      {file}
+      {code}
+      {isValid}
+      on:open-folder={onOpenFolder}
+      on:remove-confirm={onRemoveButtonConfirm}
+    />
   {:else}
     <CreateForm value={code} on:update={onCreateFormUpdate} />
   {/if}

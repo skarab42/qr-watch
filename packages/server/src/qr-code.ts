@@ -4,8 +4,10 @@ import {
   removeSync,
   writeJsonSync,
 } from "fs-extra";
-import qrcode, { QRCodeToFileOptions } from "qrcode";
+import jsqr from "jsqr";
 import { basename } from "path";
+import imageData from "get-image-data";
+import qrcode, { QRCodeToFileOptions } from "qrcode";
 
 const defaults: QRCodeToFileOptions = {
   errorCorrectionLevel: "H",
@@ -46,8 +48,24 @@ export function removeCode(path: string) {
   removeSync(path);
 }
 
+export function checkCode(path: string, code: string): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    imageData(path, (err, info) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      const res = jsqr(info.data, info.width, info.height);
+
+      resolve(!!(res && res.data === code));
+    });
+  });
+}
+
 export default {
   getCode,
   newCode,
   removeCode,
+  checkCode,
 };
