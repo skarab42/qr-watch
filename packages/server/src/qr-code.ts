@@ -1,20 +1,39 @@
-import { pathExistsSync, readJsonSync } from "fs-extra";
+import { pathExistsSync, readJsonSync, writeJsonSync } from "fs-extra";
+import qrcode, { QRCodeToFileOptions } from "qrcode";
 import { basename } from "path";
+
+const defaults: QRCodeToFileOptions = {
+  errorCorrectionLevel: "H",
+  type: "png",
+  color: {
+    light: "#ffffff00",
+  },
+};
+
+function response(path: string, code: string) {
+  return { file: basename(path), code };
+}
 
 export function getCode(path: string) {
   const jsonPath = `${path}.json`;
 
   if (pathExistsSync(path) && pathExistsSync(jsonPath)) {
-    const { data } = readJsonSync(jsonPath);
+    const { code } = readJsonSync(jsonPath);
 
-    return { path, filename: basename(path), data };
+    return response(path, code);
   }
 
-  return null;
+  return { file: null, code: null };
 }
 
-export function newCode(data: string) {
-  console.log("create new code with text:", data);
+export async function newCode(path: string, code: string) {
+  await qrcode.toFile(path, code, defaults);
+
+  const res = response(path, code);
+
+  writeJsonSync(`${path}.json`, res);
+
+  return res;
 }
 
 export default {

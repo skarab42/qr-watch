@@ -25,10 +25,7 @@
 
     switch (message.type) {
       case "get-code":
-        if (message.data) {
-          const { data } = JSON.parse(message.data);
-          code = data;
-        }
+        code = message.code;
         break;
       case "new-code":
         break;
@@ -36,7 +33,7 @@
   });
 
   function onCreateFormUpdate({ detail }) {
-    console.log({ newValue: detail });
+    ws.emit({ type: "new-code", code: detail });
   }
 </script>
 

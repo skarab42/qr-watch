@@ -6,18 +6,19 @@ import type { Message } from "@qr-watch/types";
 
 const server = new Server(config);
 
-server.on("ws:client:message", (message: Message) => {
+server.on("ws:client:message", async (message: Message) => {
   switch (message.type) {
     case "get-code":
-      const code = qr.getCode(config.outputPath);
-      server.broadcast({
-        type: "get-code",
-        data: code ? JSON.stringify(code) : undefined,
-      });
+      const { file, code } = qr.getCode(config.outputPath);
+      server.broadcast({ type: "get-code", file, code });
       break;
     case "new-code":
-      if (message.data) {
-        qr.newCode(message.data);
+      if (message.code) {
+        const { file, code } = await qr.newCode(
+          config.outputPath,
+          message.code
+        );
+        server.broadcast({ type: "new-code", file, code });
       }
       break;
   }

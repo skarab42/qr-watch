@@ -8,5 +8,6 @@ export type MessageType = "get-code" | "new-code";
 
 export interface Message {
   type: MessageType;
-  data?: string;
+  file?: string | null;
+  code?: string | null;
 }
