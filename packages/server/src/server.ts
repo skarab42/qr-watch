@@ -1,6 +1,6 @@
 import path from "path";
 import open from "open";
-import watcher from "@parcel/watcher";
+import chokidar from "chokidar";
 import { ensureDirSync } from "fs-extra";
 import staticPlugin from "fastify-static";
 import fastify, { FastifyInstance } from "fastify";
@@ -22,8 +22,8 @@ type EventName =
   | "ws:client:connection"
   | "ws:client:message"
   | "qr:watch:create"
-  | "qr:watch:update"
-  | "qr:watch:delete";
+  | "qr:watch:change"
+  | "qr:watch:unlink";
 
 export default class Server {
   readonly dev: boolean = false;
@@ -76,9 +76,9 @@ export default class Server {
 
   async listen() {
     await this.fastify.listen(this.port);
-    await watcher.subscribe(this.publicPath, (error, events) =>
-      this.watcherHandler(error, events)
-    );
+    chokidar
+      .watch(this.publicPath)
+      .on("all", (event, path) => this.watcherHandler(event, path));
 
     console.log(`Server listening at ${this.url}`);
 
@@ -100,16 +100,9 @@ export default class Server {
     });
   }
 
-  watcherHandler(error: Error | null, events: watcher.Event[]) {
-    if (error) {
-      this.fastify.log.error(`WatcherHandler: ${error}`);
-      return;
+  watcherHandler(event: string, filePath: string) {
+    if (path.resolve(filePath) === this.outputPath) {
+      this.ee.emit(`qr:watch:${event}`);
     }
-
-    events.forEach((event) => {
-      if (path.resolve(event.path) === this.outputPath) {
-        this.ee.emit(`qr:watch:${event.type}`);
-      }
-    });
   }
 }

@@ -49,9 +49,9 @@ async function checkCode() {
 //   console.log("qr:watch:create");
 // });
 
-server.on("qr:watch:update", checkCode);
+server.on("qr:watch:change", checkCode);
 
-server.on("qr:watch:delete", () => {
+server.on("qr:watch:unlink", () => {
   server.broadcast({ type: "remove-code" });
 });
 
